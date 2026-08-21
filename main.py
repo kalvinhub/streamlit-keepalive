@@ -29,18 +29,25 @@ def main():
             driver.get(url)
             print(f"Opened {url}")
 
-            wait = WebDriverWait(driver, 15)
+            # Use contains(., ...) instead of contains(text(), ...) so it also
+            # matches button labels that are wrapped in a nested <span>/<div>,
+            # which contains(text(), ...) silently misses.
+            BUTTON_XPATH = "//button[contains(., 'Yes, get this app back up')]"
+
+            wait = WebDriverWait(driver, 30)  # give slower cold-starts more time
             try:
                 # Look for the wake-up button
                 button = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]"))
+                    EC.presence_of_element_located((By.XPATH, BUTTON_XPATH))
                 )
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
+                button = wait.until(EC.element_to_be_clickable((By.XPATH, BUTTON_XPATH)))
                 print("Wake-up button found. Clicking...")
                 button.click()
 
                 # After clicking, check if it disappears
                 try:
-                    wait.until(EC.invisibility_of_element_located((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]")))
+                    wait.until(EC.invisibility_of_element_located((By.XPATH, BUTTON_XPATH)))
                     print(f"Button clicked and disappeared ✅ ({url} should be waking up)")
                 except TimeoutException:
                     print(f"Button was clicked but did NOT disappear ❌ (possible failure on {url})")
